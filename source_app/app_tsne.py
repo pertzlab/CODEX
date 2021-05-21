@@ -8,7 +8,6 @@ import re
 import warnings
 from copy import deepcopy
 from functools import reduce
-from tkinter import Tk, filedialog
 
 import dash
 import dash_bootstrap_components as dbc
@@ -626,6 +625,12 @@ check_collapse_advanced = dcc.Checklist(
     options=[{'label': ' Show advanced tSNE options', 'value': True}]
 )
 
+check_collapse_exportPlot = dcc.Checklist(
+    id='check-exportPlot',
+    value=[],
+    options=[{'label': ' Show figure export options', 'value': True}]
+)
+
 check_precomputed = dcc.Checklist(
     id='check-precomputed',
     value = [],
@@ -664,7 +669,7 @@ button_load = html.Div(
 )
 
 button_export = dbc.Button(
-                    '\u2913 Export selection',
+                    '\u2913 Export Selection',
                     id='button-export',
                     n_clicks=0,
                     color='primary'
@@ -686,6 +691,100 @@ dropdown_export = dcc.Dropdown(
     placeholder = 'Select elements to export'
 )
 
+button_exportPlot = dbc.Button(
+            '\u2913 Export Plot',
+            id='button-exportPlot',
+            n_clicks=0,
+            color='primary'
+)
+
+card_exportPlot = dbc.Card(
+    [
+        dbc.FormGroup(
+            [
+                dbc.Label('Height:'),
+                dbc.Col(
+                    dbc.InputGroup(
+                        [
+                            dbc.Input(
+                                id='input-exportPlot-height',
+                                value=500,
+                                type='number',
+                                placeholder='Height in pixel (default = 500)',
+                                min=1
+                            ),
+                            dbc.InputGroupAddon('px', addon_type='append')
+                        ]
+                    ),
+                )
+            ],
+            row=True
+        ),
+        dbc.FormGroup(
+            [
+                dbc.Label('Width:'),
+                dbc.Col(
+                    dbc.InputGroup(
+                        [
+                            dbc.Input(
+                                id='input-exportPlot-width',
+                                value=700,
+                                type='number',
+                                placeholder='Width in pixel (default = 700)',
+                                min=1
+                            ),
+                            dbc.InputGroupAddon('px', addon_type='append')
+                        ]
+                    ),
+                )
+            ],
+            row=True
+        ),
+        dbc.FormGroup(
+            [
+                dbc.Label('Scale:'),
+                dbc.Col(
+                    dbc.InputGroup(
+                        [
+                            dbc.Input(
+                                id='input-exportPlot-scale',
+                                value=float(1.0),
+                                type='number',
+                                placeholder='Scale (default = 1.0)',
+                                min=float(0.0),
+                                step='any'
+                            )
+                        ]
+                    ),
+                )
+            ],
+            row=True
+        )
+    ],
+    body=True
+)
+
+card_exportPlot_filetype = dbc.Card(
+    [
+        dbc.FormGroup(
+            [
+                dbc.Label('File format:'),
+                dbc.RadioItems(
+                    options=[
+                        {'label': 'pdf', 'value': 'pdf'},
+                        {'label': 'png', 'value': 'png'},
+                        {'label': 'jpg', 'value': 'jpg'},
+                        {'label': 'svg', 'value': 'svg'}
+                    ],
+                    value='pdf',
+                    id='radio-exportPlot'
+                )
+            ]
+        )
+    ],
+    body=True
+)
+
 tooltips = make_tooltips()
 
 app.layout = dbc.Container(
@@ -699,6 +798,7 @@ app.layout = dbc.Container(
         dbc.Row(
             [
                 dbc.Col(button_collapse, width=2),
+                dbc.Col(check_collapse_exportPlot, width=2),
                 dbc.Col(check_collapse_advanced, width=2),
                 dbc.Col(check_precomputed, width=2)
             ],
@@ -752,6 +852,27 @@ app.layout = dbc.Container(
             id='collapse-advanced',
             is_open=False
         ),
+        dbc.Collapse(
+            dbc.Row(
+                [
+                    dbc.Col(
+                        dbc.CardDeck(
+                            [
+                                card_exportPlot_filetype,
+                                card_exportPlot                                
+                            ],
+                            id='deck-exportFile'
+                        ),
+                        width=4
+                    )
+                ],
+                align='end',
+                justify='around',
+                style={'background-color': '#f8f9fa', 'padding': '15px 5px 20px 20px', 'borderBottom': 'thin lightgrey solid'}
+            ),
+            id='collapse-exportPlot',
+            is_open=False
+        ),
         dbc.Row(
             [
                 dbc.Col(dcc.Graph(id='plot-tsne'), width = 6),
@@ -765,10 +886,20 @@ app.layout = dbc.Container(
                     dbc.Card(
                         [
                             dropdown_export,
-                            button_export
+                            button_export,
+                            dcc.Download(id='download-export')
                         ]
                     ),
                     width = 3
+                ),
+                dbc.Col(
+                    dbc.Card(
+                        [
+                            button_exportPlot,
+                            dcc.Download(id='download-exportPlot')
+                        ]
+                    ),
+                    width = 1
                 ),
                 dbc.Col(
                     html.Div(id='table-proba'),
@@ -776,7 +907,7 @@ app.layout = dbc.Container(
                 )
             ],
             justify = 'between',
-            align = 'center',
+            align = 'end',
             no_gutters = True
         ),
     ] + tooltips,
@@ -802,6 +933,18 @@ def toggle_collapse(n, is_open):
     [Input('check-advanced', 'value')]
 )
 def toggle_collapse_advanced(checkval):
+    if checkval:
+        return True
+    else:
+        return False
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Collapse menu with export plot options
+@app.callback(
+    Output('collapse-exportPlot', 'is_open'),
+    [Input('check-exportPlot', 'value')]
+)
+def toggle_collapse_exportPlot(checkval):
     if checkval:
         return True
     else:
@@ -1414,88 +1557,98 @@ def update_table_proba(selected_id):
 # ----------------------------------------------------------------------------------------------------------------------
 # Export selected trajectories
 @app.callback(
-    Output('button-export', 'style'),
+    Output('download-export', 'data'),
     [Input('button-export', 'n_clicks')],
     [State('plot-tsne', 'selectedData'),
-     State('button-export', 'style'),
-     State('drop-export', 'value')]
+     State('drop-export', 'value')],
+    prevent_initial_call = True
 )
-def export_selection(nclicks, selected_points, curr_style, export_options):
-    # Dummy return because callbacks need an output
-    button_style = curr_style
-    if nclicks > 0:
-        selected_points = selected_points['points']
-        selected_ids = [point['text'] for point in selected_points]
-        dff = deepcopy(df[df['ID'].isin(selected_ids)])  # copy avoids pandas warning about modifying copy
-        dff['column_wide'] = dff['variable'] + '_' + dff['Time'].astype('object')
-        col_order = [meas + '_' + str(ti) for meas in measurement for ti in sorted(dff['Time'].unique().astype('int'))]
-        # Rebuild measurement array from melted dataframe, much faster than retrieving in dataloader in big dataset
-        dff_wide = dff.pivot(index='ID', columns='column_wide', values='value')
-        dff_wide = dff_wide.reindex(col_order, axis=1)
+def export_selection(nclicks, selected_points, export_options):
+    selected_points = selected_points['points']
+    selected_ids = [point['text'] for point in selected_points]
+    dff = deepcopy(df[df['ID'].isin(selected_ids)])  # copy avoids pandas warning about modifying copy
+    dff['column_wide'] = dff['variable'] + '_' + dff['Time'].astype('object')
+    col_order = [meas + '_' + str(ti) for meas in measurement for ti in sorted(dff['Time'].unique().astype('int'))]
+    # Rebuild measurement array from melted dataframe, much faster than retrieving in dataloader in big dataset
+    dff_wide = dff.pivot(index='ID', columns='column_wide', values='value')
+    dff_wide = dff_wide.reindex(col_order, axis=1)
 
-        # ----------------------------------------------
-        # Add crop, tsne coords and model output
-        frame_class = dff[['ID', 'Class']].groupby('ID').first().reset_index()
-        frame_class.rename(columns={'Class': 'Class_ID'}, inplace=True)
-        frame_class['Class'] = frame_class['Class_ID']
-        frame_class.replace({'Class': classes_dict}, inplace=True)
+    # ----------------------------------------------
+    # Add crop, tsne coords and model output
+    frame_class = dff[['ID', 'Class']].groupby('ID').first().reset_index()
+    frame_class.rename(columns={'Class': 'Class_ID'}, inplace=True)
+    frame_class['Class'] = frame_class['Class_ID']
+    frame_class.replace({'Class': classes_dict}, inplace=True)
 
-        frame_coord = {point['text']: (round(point['x'], 4), round(point['y'], 4)) for point in selected_points}
-        frame_coord = pd.DataFrame.from_dict(frame_coord, orient='index', columns=['xTSNE', 'yTSNE'])
-        frame_coord.reset_index(inplace=True)
-        frame_coord.rename(columns={'index': 'ID'}, inplace=True)
+    frame_coord = {point['text']: (round(point['x'], 4), round(point['y'], 4)) for point in selected_points}
+    frame_coord = pd.DataFrame.from_dict(frame_coord, orient='index', columns=['xTSNE', 'yTSNE'])
+    frame_coord.reset_index(inplace=True)
+    frame_coord.rename(columns={'index': 'ID'}, inplace=True)
 
-        frame_probs = deepcopy(DF_PROBS.loc[selected_ids])
-        frame_probs.drop('Class', axis=1, inplace=True)
-        frame_probs = round(frame_probs, 4)
-        frame_probs.columns = ['Prob_' + col for col in frame_probs.columns]
-        frame_probs.reset_index(inplace=True)
-        frame_probs.rename(columns={'index': 'ID'}, inplace=True)
+    frame_probs = deepcopy(DF_PROBS.loc[selected_ids])
+    frame_probs.drop('Class', axis=1, inplace=True)
+    frame_probs = round(frame_probs, 4)
+    frame_probs.columns = ['Prob_' + col for col in frame_probs.columns]
+    frame_probs.reset_index(inplace=True)
+    frame_probs.rename(columns={'index': 'ID'}, inplace=True)
 
-        frame_feats = deepcopy(DF_FEATS.loc[selected_ids])
-        frame_feats = round(frame_feats, 4)
-        frame_feats.reset_index(inplace=True)
-        frame_feats.rename(columns={'index': 'ID'}, inplace=True)
+    frame_feats = deepcopy(DF_FEATS.loc[selected_ids])
+    frame_feats = round(frame_feats, 4)
+    frame_feats.reset_index(inplace=True)
+    frame_feats.rename(columns={'index': 'ID'}, inplace=True)
 
-        frame_crop = deepcopy(DF_CROP[DF_CROP['ID'].isin(selected_ids)])
-        # ----------------------------------------------
-        # Merge the requested frames
-        df_out = [frame_class['ID']]
-        if 'Class' in export_options:
-            df_out.append(frame_class)
-        if 'Coord' in export_options:
-            df_out.append(frame_coord)
-        if 'Probability' in export_options:
-            df_out.append(frame_probs)
-        if 'Feature' in export_options:
-            df_out.append(frame_feats)
-        if 'Crop' in export_options:
-            df_out.append(frame_crop)
-        if 'Input' in export_options:
-            df_out.append(dff_wide)
-        if len(df_out) == 1:  # if only the ID column
-            df_out = df_out[0].to_frame()
-        else:
-            df_out = reduce(lambda left,right: pd.merge(left, right, on='ID'), df_out)
-        df_out.set_index('ID', inplace=True)
-
-        # Open contextual menu to save
-        root = Tk()
-        root.filename = filedialog.asksaveasfilename(initialdir=".", title="Export selection",
-                                                     filetypes=(("csv files","*.csv"), ("all files","*.*")),
-                                                     initialfile='table_export.csv')
-        path_to_save = root.filename
-        root.destroy()
-
-        # Dummy return
-        # If press cancel in context menu, do nothing
-        if path_to_save == ():
-            return button_style
-        else:
-            df_out.to_csv(path_or_buf=path_to_save)
-            return button_style
+    frame_crop = deepcopy(DF_CROP[DF_CROP['ID'].isin(selected_ids)])
+    # ----------------------------------------------
+    # Merge the requested frames
+    df_out = [frame_class['ID']]
+    if 'Class' in export_options:
+        df_out.append(frame_class)
+    if 'Coord' in export_options:
+        df_out.append(frame_coord)
+    if 'Probability' in export_options:
+        df_out.append(frame_probs)
+    if 'Feature' in export_options:
+        df_out.append(frame_feats)
+    if 'Crop' in export_options:
+        df_out.append(frame_crop)
+    if 'Input' in export_options:
+        df_out.append(dff_wide)
+    if len(df_out) == 1:  # if only the ID column
+        df_out = df_out[0].to_frame()
     else:
-        return button_style
+        df_out = reduce(lambda left,right: pd.merge(left, right, on='ID'), df_out)
+    df_out.set_index('ID', inplace=True)
+
+    return dcc.send_data_frame(df_out.to_csv, filename='export_table.csv')
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Export Plot of the tSNE
+@app.callback(
+    Output('download-exportPlot', 'data'),
+    [Input('button-exportPlot', 'n_clicks')],
+    [State('plot-tsne', 'figure'),
+     State('input-exportPlot-height', 'value'),
+     State('input-exportPlot-width', 'value'),
+     State('input-exportPlot-scale', 'value'),
+     State('radio-exportPlot', 'value')],
+    prevent_initial_call = True
+)
+def export_tSNEPDF(nclicks, fig, height, width, scale, fiformat):
+    fig_exp = go.Figure()
+    fig_data = fig['data']
+    fig_layout = fig['layout']
+
+    # Scattergl is rendered as blurry raster
+    for trace in fig_data:
+        if trace['type'] == 'scattergl':
+            trace['type'] = 'scatter'
+    fig_exp.add_traces(fig_data)
+    fig_exp.update_layout(fig_layout)
+    # Bytes string encoding the figure
+    stringFig = fig_exp.to_image(format=fiformat, engine='kaleido', width=width, height=height, scale=float(scale))
+
+    return dcc.send_bytes(stringFig, filename='export_figure.{}'.format(fiformat))
 
 
 # ----------------------------------------------------------------------------------------------------------------------

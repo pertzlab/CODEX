@@ -22,9 +22,6 @@ class LitConvNetCam(pl.LightningModule):
         self.nfeatures = nfeatures
         self.length = length
 
-        # Add a dummy channel dimension for conv1D layer
-        self.input_size = (batch_size, 1, length)
-
         self.loss = loss
         self.lr = lr
         self.lr_scheduler_milestones = lr_scheduler_milestones
@@ -76,6 +73,11 @@ class LitConvNetCam(pl.LightningModule):
             nn.Linear(1*nfeatures, nclass),  # 1 because global pooling reduce length of features to 1
             #nn.Softmax(1)  # Already included in nn.CrossEntropy
         )
+
+    @property
+    def input_size(self):
+        # Add a dummy channel dimension for conv1D layer
+        return (self.batch_size, 1, self.length)
 
     def forward(self, x):
         # (batch_size x length TS)
@@ -179,9 +181,6 @@ class LitConvNetCamBi(pl.LightningModule):
         self.nfeatures = nfeatures
         self.length = length
 
-        # Add a dummy channel dimension for conv1D layer
-        self.input_size = (batch_size, 1, 2, length)
-
         self.loss = loss
         self.lr = lr
         self.lr_scheduler_milestones = lr_scheduler_milestones
@@ -233,6 +232,11 @@ class LitConvNetCamBi(pl.LightningModule):
             nn.Linear(1*nfeatures, nclass),  # 1 because global pooling reduce length of features to 1
             #nn.Softmax(1)  # Already included in nn.CrossEntropy
         )
+
+    @property
+    def input_size(self):
+        # Add a dummy channel dimension for conv1D layer
+        return (self.batch_size, 1, 2, self.length)
 
     def forward(self, x):
         # (batch_size x length TS)
