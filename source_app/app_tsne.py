@@ -93,7 +93,7 @@ length = net.length
 
 # ----------------------------------------------------------------------------------------------------------------------
 # Data Loading, Subsetting, Preprocessing
-data = DataProcesser(data_file)
+data = DataProcesser(data_file, datatable=False)
 measurement = data.detect_groups_times()['groups'] if measurement is None else measurement
 start_time = data.detect_groups_times()['times'][0] if start_time is None else start_time
 end_time = data.detect_groups_times()['times'][1] if end_time is None else end_time
@@ -114,7 +114,10 @@ if len(cols_to_change) > 0:
 data.get_stats()
 if selected_classes is not None:
     data.dataset = data.dataset[data.dataset[data.col_class].isin(selected_classes)]
-data.split_sets(which='dataset')
+# Suppress the warning that data were not processed, irrelevant for the app
+with warnings.catch_warnings():
+    warnings.simplefilter('ignore')
+    data.split_sets(which='dataset')
 
 print('Start time: {}; End time: {}; Measurement: {}'.format(start_time, end_time, measurement))
 
@@ -145,7 +148,7 @@ for meas in measurement:
     col_meas = [i for i in df.columns if re.match('^{}_'.format(meas), i)]
     temp = df[['ID', 'Class'] + col_meas].melt(['ID', 'Class'])
     temp['Time'] = temp['variable'].str.extract('([0-9]+$)')
-    temp['variable'] = temp['variable'].str.replace('_[0-9]+$', '')
+    temp['variable'] = temp['variable'].str.replace('_[0-9]+$', '', regex=True)
     ldf.append(temp)
 df = pd.concat(ldf)
 del temp
@@ -669,11 +672,21 @@ button_load = html.Div(
 )
 
 button_export = dbc.Button(
-                    '\u2913 Export Selection',
-                    id='button-export',
-                    n_clicks=0,
-                    color='primary'
-                )
+    '\u2913 Export Selection',
+    id='button-export',
+    n_clicks=0,
+    color='primary'
+)
+
+popover_export = dbc.Popover(
+    [
+        dbc.PopoverHeader('Empty export'),
+        dbc.PopoverBody('No data selected for export. First, select the points to export with the box or the lasso selection tool in the plot banner.')
+    ],
+    id='popover-export',
+    is_open=False,
+    target='button-export'
+)
 
 dropdown_export = dcc.Dropdown(
     id = 'drop-export',
@@ -887,6 +900,7 @@ app.layout = dbc.Container(
                         [
                             dropdown_export,
                             button_export,
+                            popover_export,
                             dcc.Download(id='download-export')
                         ]
                     ),
@@ -1113,7 +1127,15 @@ def read_tsne(contents, filename, xcol, ycol, idcol, grcol):
             plchldr,
             plchldr,
             plchldr,
-            plchldr
+            plchldr,
+            True,
+            'primary',
+            'Upload .csv file',
+            '__placeholder',
+            '__placeholder'
+            '__placeholder',
+            '__placeholder',
+            '__placeholder'
         )
 
     content_type, content_string = contents.split(',')
@@ -1560,10 +1582,15 @@ def update_table_proba(selected_id):
     Output('download-export', 'data'),
     [Input('button-export', 'n_clicks')],
     [State('plot-tsne', 'selectedData'),
-     State('drop-export', 'value')],
+     State('drop-export', 'value'),
+     State('download-export', 'data')],
     prevent_initial_call = True
 )
-def export_selection(nclicks, selected_points, export_options):
+def export_selection(nclicks, selected_points, export_options, current_data):
+    if selected_points is None:
+        # Return the current value if no point is selected
+        print('No data point selected for export.')
+        return current_data
     selected_points = selected_points['points']
     selected_ids = [point['text'] for point in selected_points]
     dff = deepcopy(df[df['ID'].isin(selected_ids)])  # copy avoids pandas warning about modifying copy
@@ -1621,6 +1648,17 @@ def export_selection(nclicks, selected_points, export_options):
 
     return dcc.send_data_frame(df_out.to_csv, filename='export_table.csv')
 
+# ----------------------------------------------------------------------------------------------------------------------
+# Open popover if export to csv is empty
+@app.callback(
+    Output('popover-export', 'is_open'),
+    [Input('button-export', 'n_clicks')],
+    [State('plot-tsne', 'selectedData')],
+    prevent_initial_call = True
+)
+def toggle_popover_export(nclicks, selected_points):
+    if selected_points is None:
+        return True
 
 # ----------------------------------------------------------------------------------------------------------------------
 # Export Plot of the tSNE
