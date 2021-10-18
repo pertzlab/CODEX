@@ -148,8 +148,3 @@ def visualize_layer(model, layer_idx=0, linkage='average'):
     plt.tight_layout()
     plt.show()
     return None
-
-
-def get_label_forImbaSampler(dataset, idx):
-    #callback function used in imbalanced dataset loader.
-    return int(dataset[idx]['label'])

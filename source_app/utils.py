@@ -153,8 +153,3 @@ def tensorboard_to_df(path_to_logs, tags):
     # Merge all dataframes
     out = reduce(lambda x, y: pd.merge(x, y, on='step'), dfList)
     return out
-    
-def get_label_forImbaSampler(dataset, idx):
-    #callback function used in imbalanced dataset loader.
-    return int(dataset[idx]['label'])
-

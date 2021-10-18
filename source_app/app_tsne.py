@@ -29,7 +29,7 @@ from class_dataset import RandomCrop, Subtract, ToTensor, myDataset
 from load_data import DataProcesser
 from plot_maps import create_cam, create_gbackprop, select_series
 from tooltips import make_tooltips
-from utils import frange, get_label_forImbaSampler, model_output_app
+from utils import frange, model_output_app
 
 
 #TODO: selection hover/click mode
@@ -167,8 +167,9 @@ if rand_crop:
         RandomCrop(output_size=length, ignore_na_tails=True, export_crop_pos=True),
         ToTensor()])
 else:
-    ls_transforms = transforms.Compose([Subtract(subtract_numbers),
-                                        ToTensor()])
+    ls_transforms = transforms.Compose([
+        Subtract(subtract_numbers),
+        ToTensor()])
 
 mydataset = myDataset(dataset=data.dataset[data.dataset['ID'].isin(selected_ids)], transform=ls_transforms)
 mydataloader = DataLoader(dataset=mydataset,

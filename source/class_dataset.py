@@ -73,6 +73,10 @@ class myDataset(Dataset):
 
         return sample
 
+    # Callback function used in imbalanced dataset loader
+    def get_labels(self):
+        return list(self.dataset[self.col_class].astype(int))
+
     def detect_groups(self):
         colnames = list(self.dataset.columns.values)
         colnames.remove(self.col_id)
@@ -287,6 +291,40 @@ class FixedCrop(object):
     def __call__(self, sample):
         series, label, identifier = sample['series'], sample['label'], sample['identifier']
         series = series[:, self.start:self.end]
+
+        return {'series': series,
+                'label': label,
+                'identifier': identifier}
+
+
+class scale(object):
+    """Scale to zero mean and unit standard deviation
+
+    Args:
+        with_mean (cool): Whether to subtract the mean
+        with_std (bool): Whether to divide by the standard deviation
+        per_channel (bool): Whether to do the scaling globally or idependantly per channel (i.e. per row)
+    """
+
+    def __init__(self, with_mean=True, with_std=True, per_channel=True):
+        assert isinstance(with_mean, bool)
+        assert isinstance(with_std, bool)
+        self.with_mean = with_mean
+        self.with_std = with_std
+        self.per_channel = per_channel
+
+    def __call__(self, sample):
+        series, label, identifier = sample['series'], sample['label'], sample['identifier']
+        if self.per_channel:
+            if self.with_mean:
+                series -= series.mean(axis=1, keepdims=True)
+            if self.with_std:
+                series /= series.std(axis=1, keepdims=True)
+        else:
+            if self.with_mean:
+                series -= series.mean()
+            if self.with_std:
+                series /= series.std()
 
         return {'series': series,
                 'label': label,

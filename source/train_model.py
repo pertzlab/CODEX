@@ -28,8 +28,6 @@ from class_dataset import (FixedCrop, RandomCrop, RandomNoise, RandomShift,
                            Subtract, ToTensor, myDataset)
 from load_data import DataProcesser
 from train_utils import AverageMeter, accuracy, even_intervals
-from utils import get_label_forImbaSampler
-
 
 # %% Train
 def makeParser():
@@ -162,7 +160,7 @@ def makeLoaders(args, return_nclass=False, return_length=False, return_measureme
         train_loader = DataLoader(
             dataset=data_train,
             batch_size=args.batch,
-            sampler=ImbalancedDatasetSampler(data_train, callback_get_label=get_label_forImbaSampler),
+            sampler=ImbalancedDatasetSampler(data_train),
             num_workers=args.ncpuLoad,
             drop_last=True
         )
