@@ -25,6 +25,7 @@ conda install tensorboard=2.4.0 -y
 conda install -c conda-forge pytorch-lightning=1.3.2 -y
 conda install -c conda-forge dash-bootstrap-components=0.12.2 -y
 conda install -c conda-forge python-kaleido=0.2.1 -y
+pip install git+https://github.com/ufoym/imbalanced-dataset-sampler
 # Should already be installed with dash-bootstrap-components, but in case of issue with version run this
 # pip install dash==1.20.0
 
