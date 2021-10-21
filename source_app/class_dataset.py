@@ -60,8 +60,7 @@ class myDataset(Dataset):
 
     def __getitem__(self, idx):
         identifier = self.dataset.iloc[idx, self.col_id_idx]
-        label = np.array(self.dataset.iloc[idx, self.col_class_idx])
-        label = label.astype('int')
+        label = np.array(self.dataset.iloc[idx, self.col_class_idx], dtype='int64')
         sequence_arrays = [self.dataset.iloc[idx, self.groups_indices[group][0] : self.groups_indices[group][1]].values
                            for group in self.groups]  # .values turns into numpy
         series = np.vstack(sequence_arrays)

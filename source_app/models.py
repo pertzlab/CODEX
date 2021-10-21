@@ -109,10 +109,6 @@ class LitConvNetCam(pl.LightningModule):
         series, label = batch['series'], batch['label']
         series = series.view(self.input_size)
         prediction = self(series)
-        #################################################
-        # Todo: Check if always necessary
-        #label = label.type(torch.LongTensor)
-        #################################################
         train_loss = self.loss(prediction, label)
         train_acc = self.train_acc(softmax(prediction, dim=1), label)
         train_f1 = self.train_f1(softmax(prediction, dim=1), label)
@@ -137,10 +133,6 @@ class LitConvNetCam(pl.LightningModule):
         series, label = batch['series'], batch['label']
         series = series.view(self.input_size)
         prediction = self(series)
-        #################################################
-        # Todo: Check if always necessary
-        #label = label.type(torch.LongTensor)
-        #################################################
         val_loss = self.loss(prediction, label)
         val_acc = self.val_acc(softmax(prediction, dim=1), label)
         val_f1 = self.val_f1(softmax(prediction, dim=1), label)
@@ -268,10 +260,6 @@ class LitConvNetCamBi(pl.LightningModule):
         series, label = batch['series'], batch['label']
         series = series.view(self.input_size)
         prediction = self(series)
-        #################################################
-        # Todo: Check if always necessary
-        #label = label.type(torch.LongTensor)
-        #################################################
         train_loss = self.loss(prediction, label)
         train_acc = self.train_acc(softmax(prediction, dim=1), label)
         train_f1 = self.train_f1(softmax(prediction, dim=1), label)
@@ -296,10 +284,6 @@ class LitConvNetCamBi(pl.LightningModule):
         series, label = batch['series'], batch['label']
         series = series.view(self.input_size)
         prediction = self(series)
-        #################################################
-        # Todo: Check if always necessary
-        #label = label.type(torch.LongTensor)
-        #################################################
         val_loss = self.loss(prediction, label)
         val_acc = self.val_acc(softmax(prediction, dim=1), label)
         val_f1 = self.val_f1(softmax(prediction, dim=1), label)
