@@ -5,6 +5,7 @@
    * [How to cite us?](#how-to-cite-us)
    * [Getting started](#getting-started)
       * [Installation](#installation)
+         * [Singularity container](#singularity-container)
          * [Python part](#python-part)
          * [R part (recommended, only used for the motif mining analysis)](#r-part-recommended-only-used-for-the-motif-mining-analysis)
       * [Input format and requirements](#input-format-and-requirements)
@@ -47,6 +48,16 @@ Also, bear in mind that training a CNN in reasonable time requires a dedicated G
 ## Installation
 
 CODEX is written in Python and uses the powerful [Pytorch](https://pytorch.org/) and [Pytorch-lightning](https://www.pytorchlightning.ai/) libraries for artificial neural networks. In addition, some helper scripts for the motifs mining analysis are written in R. CODEX was tested on Ubuntu 16, Ubuntu 18, Ubuntu 20 and Windows 10.
+
+### Singularity container
+
+Rather than installing the environment, you might prefer using a Singularity container for ease-of-use and better reproducibility. You can download a [ready CPU-only image over here on figshare](https://figshare.com/articles/software/CODEX_singularity_container_-_CPU_only/24156330).
+Alternatively, if you wish to rebuild the image yourself, its definition file can be found under `CONDA/singularity_CODEX_CPUonly.def`.
+
+To run the CODEX analysis with this container, simply execute the scripts through the image like so:
+  ```
+  singularity exec path/to/singularity/image.sif python source/train_model.py --data sample_data/GrowthFactor_ErkAkt_Bivariate.zip --nepochs 10 -b 50 --ngpu 0 
+  ```
 
 ### Python part
 

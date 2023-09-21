@@ -60,6 +60,7 @@ def parseArguments_overlay():
                                         'data were irrelevant measurement were acquired. Set to -1 for automatic detection.',
                         type=int, default=-1)
     parser.add_argument('-p', '--port', help='int, port on which to start the application.', type=int, default=8050)
+    parser.add_argument('--host', help='str, host name for the application. Default to "127.0.0.1".', type=str, default='127.0.0.1')
     args = parser.parse_args()
     return(args)
 
@@ -1692,4 +1693,4 @@ def export_tSNEPDF(nclicks, fig, height, width, scale, fiformat):
 
 # ----------------------------------------------------------------------------------------------------------------------
 if __name__ == '__main__':
-    app.run_server(debug=False, port=args.port)
+    app.run_server(debug=False, host=args.host, port=args.port)
